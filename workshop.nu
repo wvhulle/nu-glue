@@ -1,7 +1,12 @@
 #! /usr/bin/env nu
 
+# Nushell Workshop: Interactive Demonstrations
+#
 # For this workshop it is necessary to download the COVID-19 dataset from Kaggle.
 # Use the `fetch-data.nu` script to download and extract the data.
+#
+# This file contains guided demonstrations. For hands-on practice, see exercises/ directory.
+# Each demo section will point you to the relevant exercise files.
 
 def demo [] {
   # Listing files
@@ -35,8 +40,10 @@ def table-operations [] {
   # Show unique all unique dates on which files in data where modified
   ls data/ | select modified | uniq
 
-  # TODO: Shows all files modified today in the "data" directory,
-  ls -l data | where modified >= (date now) - 1day
+  # Show all files modified today in the "data" directory
+  ls -l data | where modified >= ((date now) - 1day)
+
+  # TODO: Exercise time! Try the exercises in: exercises/01-table-operations.nu
 }
 
 def row-conditions [] {
@@ -44,7 +51,11 @@ def row-conditions [] {
   ls -l data | where ($it.created - (date now)) > 1year
   # A year is not a fixed number of days, because of leap years.
   ls -l data | where ($it.created - (date now)) > 51wk
-  # TODO: You just learned to filter files. Now, write it as a closure.
+
+  # Same filter using closure syntax
+  ls -l data | where {|item| ($item.created - (date now)) > 1year }
+
+  # TODO: Exercise time! Try the exercises in: exercises/02-closures.nu
 }
 
 def csv-exploration [] {
@@ -62,12 +73,8 @@ def interactive-commands [] {
   # For example: t for transpose, q for quit
 
   # Use :try for imperative manipulation
-  
   # Search for patterns with `where country =~ "It"`
   # Drop a column with reject Confirmed
-
-  # You zoom into the data and copy selected value on `q`
-  # explore --peek
 
   # TODO: try sorting by Deaths descending
   open data/covid_19_data.csv | sort-by Deaths --reverse | explore

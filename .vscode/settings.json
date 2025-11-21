@@ -1,0 +1,6 @@
+{
+  "terminal.integrated.env.linux": {
+    "TOPIARY_CONFIG_FILE": "${workspaceFolder}/.topiary/languages.ncl",
+    "TOPIARY_LANGUAGE_DIR": "${workspaceFolder}/.topiary/languages"
+  }
+}
