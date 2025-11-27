@@ -49,11 +49,13 @@
   }), // freeze theorem counter for animation
   config-info(
     title: [NuShell],
+    short-title: [Nu],
+    short-subtitle: [Superglue],
     subtitle: [Superglue for your OS],
     author: [Willem Vanhulle],
     date: [Wednesday, Dec 3, 2025],
-    institution: [SysGhent],
-    logo: emoji.shell,
+    institution: [SysGhent #box[#image("images/sysghent.svg", height: 1em)]],
+    logo: box[#image("images/nushell.png", height: 1em)],
   ),
 )
 
@@ -85,7 +87,14 @@ Improvements:
 
 #qa[What does Nu in NuShell stand for?][_New_ shell.]
 
+#focus-slide[
+  #image("images/bash_poster.png")
+]
+
 = Prerequisites
+
+
+
 
 == Try it out out yourself
 
@@ -350,7 +359,7 @@ ls | sort-by size | reverse | first | get name | cp $in ~
 
   node(enclose: (<text-stdout>, <text-stderr>, <stderr>, <stdout>), fill: gray.lighten(70%), name: <legacy>),
 
-  node((1.5, 1), [Side effects], name: <side-effects>),
+  node((1.5, 1), [Side effects (displayed in terminal)], name: <side-effects>),
   edge(<side-effects>, <legacy>, "->"),
 
 
@@ -425,7 +434,7 @@ ps | where name == Notepad2.exe | get pid.0 | kill $in
 
 = Explore
 
-== Help
+== Zooming-in
 
 Telescoping into structured data:
 
@@ -439,9 +448,9 @@ Key bindings:
 - Go back: `ESC` / `q`
 - Navigate: Arrow keys or `j`/`k`
 
+The `help` command is for built-in Nu commands. `man` is for external commands.
 
-
-== Try REPL
+== Data exploration
 
 Open interactive data explorer with `:try` in `explore` mode.
 
@@ -479,8 +488,8 @@ Shorthand for:
 
 #codly(
   highlights: (
-    (line: 3, start: 4, end: 15, fill: red),
-    (line: 4, start: 4, end: 11, fill: red),
+    (line: 3, start: 4, end: 15, fill: green),
+    (line: 4, start: 4, end: 11, fill: green),
   ),
   annotations: (
     (start: 1, end: 1, content: [Table output]),
