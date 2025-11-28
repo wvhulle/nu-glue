@@ -432,6 +432,95 @@ Or more concisely:
 ps | where name == Notepad2.exe | get pid.0 | kill $in
 ```
 
+= Custom commands
+
+== Creating simple CLI tools
+
+No positional arguments, no flags, just pipeline input and output.
+
+```sh
+def double [] {
+  each { |num| 2 * $num }
+}
+```
+
+#pause
+
+Only positional arguments:
+
+```sh
+def greet [name1, name2] {
+  $"Hello, ($name1) and ($name2)!"
+}
+
+greet Wei Mei
+# => Hello, Wei and Mei!
+```
+
+== Optional arguments
+
+```sh
+def greet [name?: string] {
+  $"Hello, ($name | default 'You')"
+}
+
+greet
+# => Hello, You
+```
+
+Default values:
+
+```sh
+def congratulate [age: int = 18] {
+  $"Happy birthday! You are ($age) years old now!"
+}
+```
+
+== Typing pipeline
+
+```sh
+def inc []: int -> int {
+  $in + 1
+  print "Did it!"
+}
+
+# => Error: nu::parser::output_type_mismatch
+# =>
+# =>   × Command output doesn't match int.
+# =>    ╭─[entry #1:1:24]
+# =>  1 │ ╭─▶ def inc []: int -> int {
+# =>  2 │ │     $in + 1
+# =>  3 │ │     print "Did it!"
+# =>  4 │ ├─▶ }
+# =>    · ╰──── expected int, but command outputs nothing
+# =>    ╰────
+```
+
+== Documentation
+
+```sh
+# Greet guests along with a VIP
+#
+# Use for birthdays, graduation parties,
+# retirements, and any other event which
+# celebrates an event # for a particular
+# person.
+def vip-greet [
+  vip: string        # The special guest
+   ...names: string  # The other guests
+] {
+  for $name in $names {
+    print $"Hello, ($name)!"
+  }
+
+  print $"And a special welcome to our VIP today, ($vip)!"
+}
+```
+
+== Exercises
+
+Exercise: Create a command line program / script that takes a list of numbers as input and outputs their average.
+
 = Explore
 
 == Zooming-in
@@ -506,4 +595,345 @@ where (
 )
 ```
 
+= List
 
+== Single column tables
+
+```sh
+[bell book candle] | where ($it =~ 'b')
+# => ╭───┬──────╮
+# => │ 0 │ bell │
+# => │ 1 │ book │
+# => ╰───┴──────╯
+```
+
+Commas are optional in list literals.
+
+```sh
+let colors = [yellow green]
+let colors = ($colors | prepend red)
+let colors = ($colors | append purple)
+let colors = ($colors ++ ["blue"])
+let colors = (["black"] ++ $colors)
+$colors
+# => [black red yellow green purple blue]
+```
+
+
+
+== Iterating over lists
+
+```sh
+let names = [Mark Tami Amanda Jeremy]
+$names | each { |elt| $"Hello, ($elt)!" }
+# Outputs "Hello, Mark!" and three more similar lines.
+
+$names | enumerate | each { |elt| $"($elt.index + 1) - ($elt.item)" }
+# Outputs "1 - Mark", "2 - Tami", etc.
+```
+
+Filtering lists:
+
+```sh
+let colors = [red orange yellow green blue purple]
+$colors | where ($it | str ends-with 'e')
+# The block passed to `where` must evaluate to a boolean.
+# This outputs the list [orange blue purple].
+```
+Boolean conditions:
+
+```sh
+let colors = [red green blue]
+# Do any color names end with "e"?
+$colors | any {|elt| $elt | str ends-with "e" } # true
+```
+
+== Exercise
+
+Exercise: Compute the sum of squares of the first 10 natural numbers.
+
+Solution:
+
+#pause
+
+```sh
+1..10 | each { |n| $n * $n } | math sum
+```
+
+#pause
+
+Exercise: Use the `lines` command to find out the first commit message in the Git history of this repository.
+
+Solution:
+
+#pause
+
+```sh
+git log --oneline | lines | get 0 | str trim
+```
+
+= Records
+
+== Single-row tables
+
+```sh
+let my_record = {
+ name: "Sam"
+ age: 30
+ }
+$my_record | update age { $in + 1 }
+# => ╭──────┬─────╮
+# => │ name │ Sam │
+# => │ age  │ 31  │
+# => ╰──────┴─────╯
+```
+
+Displayed like two columns, but still a single-row table (record).
+
+
+
+== Parsing JSON
+
+```sh
+# Nushell
+{ "apples": 543, "bananas": 411, "oranges": 0 }
+# => ╭─────────┬─────╮
+# => │ apples  │ 543 │
+# => │ bananas │ 411 │
+# => │ oranges │ 0   │
+# => ╰─────────┴─────╯
+# JSON
+'{ "apples": 543, "bananas": 411, "oranges": 0 }' | from json
+# => ╭─────────┬─────╮
+# => │ apples  │ 543 │
+# => │ bananas │ 411 │
+# => │ oranges │ 0   │
+# => ╰─────────┴─────╯
+```
+
+== Iterating
+
+```sh
+{ "apples": 543, "bananas": 411, "oranges": 0 } | items {|fruit, count| $"We have ($fruit) ($count)" }
+# => ╭───┬─────────────────────╮
+# => │ 0 │ We have apples 543  │
+# => │ 1 │ We have bananas 411 │
+# => │ 2 │ We have oranges 0   │
+# => ╰───┴─────────────────────╯
+```
+
+== Exercise
+
+Exercise: Convert the following JQ command to Nushell:
+
+```sh
+echo '[{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]' |
+jq -r '.[] | select(.age > 28)'
+```
+
+Solution:
+
+#pause
+
+```sh
+'[{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]'
+| from json
+| where age > 28
+# => ╭───┬───────┬─────╮
+# => │ # │ name  │ age │
+# => ├───┼───────┼─────┤
+# => │ 0 │ Alice │  30 │
+# => ╰───┴───────┴─────╯
+```
+
+#pagebreak()
+
+Exercise: COnvert following JQ command to Nushell:
+
+```sh
+echo '[1, 2, 3, 4, 5]' |
+jq -r 'map(. * 2)'
+```
+
+Solution:
+
+```sh
+'[1, 2, 3, 4, 5]'
+| from json
+| each { |x| $x * 2 }
+# => ╭───┬────╮
+# => │ 0 │  2 │
+# => │ 1 │  4 │
+# => │ 2 │  6 │
+# => │ 3 │  8 │
+# => │ 4 │ 10 │
+# => ╰───┴────╯
+```
+
+= Tables
+
+== Creating tables
+
+```sh
+let first = [[a b]; [1 2]]
+let second = [[a b]; [3 4]]
+$first | append $second
+# => ───┬───┬───
+# =>  # │ a │ b
+# => ───┼───┼───
+# =>  0 │ 1 │ 2
+# =>  1 │ 3 │ 4
+# => ───┴───┴───
+```
+
+== Getting data out
+
+
+#grid(columns: 2)[
+
+  ```sh
+  ls | get name
+  # => ───┬───────────────
+  # =>  0 │ files.rs
+  # =>  1 │ lib.rs
+  # =>  2 │ lite_parse.rs
+  # =>  3 │ parse.rs
+  # =>  4 │ path.rs
+  # =>  5 │ shapes.rs
+  # => ───┴───────────────
+  ```
+
+][
+
+
+  ```sh
+  ls | select name
+  # => ───┬───────────────
+  # =>  # │ name
+  # => ───┼───────────────
+  # =>  0 │ files.rs
+  # =>  1 │ lib.rs
+  # =>  2 │ lite_parse.rs
+  # =>  3 │ parse.rs
+  # =>  4 │ path.rs
+  # =>  5 │ shapes.rs
+  # => ───┴───────────────
+  ```
+]
+
+#qa[What is the difference between `get` and `select`?][`get` returns a single column as a list, while `select` returns a table with one column.]
+
+#qa[What is the type of the arguments passed to `get` and `select`?][So-called "cell-paths", relative paths into structured data.]
+
+== Exercise
+
+Download dataset with `fetch-data.nu`.
+
+Explore the dataset: `open data/covid_19_data.csv | explore`.
+
+Exercise: try sorting by Deaths descending
+
+Solution:
+
+#pause
+
+```bash
+open data/covid_19_data.csv | sort-by Deaths --reverse
+```
+
+
+= Data exploration
+
+== Grouping
+
+```sh
+open data/covid_19_data.csv | group-by `Country/Region`
+# => ╭─────────────┬───────────────────╮
+# => │ Afghanistan │ [table 75 rows]   │
+# => │ Albania     │ [table 74 rows]   │
+# => │ Algeria     │ [table 75 rows]   │
+# => │ ...         │ ...               │
+# => ╰─────────────┴───────────────────╯
+```
+
+#qa[Does the previous command return a record or a table?][A record: Keys = country names, Values = tables of rows for that country.]
+
+
+== From record to table
+
+Records cannot be iterated with `each` (which expects a table/list).
+
+Use `transpose` to convert a record into a table:
+
+```sh
+{a: 1, b: 2} | transpose
+# => ╭───┬─────────┬─────────╮
+# => │ # │ column0 │ column1 │
+# => ├───┼─────────┼─────────┤
+# => │ 0 │ a       │       1 │
+# => │ 1 │ b       │       2 │
+# => ╰───┴─────────┴─────────╯
+
+{a: 1, b: 2} | transpose key value
+# => ╭───┬─────┬───────╮
+# => │ # │ key │ value │
+# => ├───┼─────┼───────┤
+# => │ 0 │ a   │     1 │
+# => │ 1 │ b   │     2 │
+# => ╰───┴─────┴───────╯
+```
+
+
+
+== Total deaths per country
+
+```sh
+open data/covid_19_data.csv
+| group-by `Country/Region`
+| transpose country rows
+# => ╭───┬─────────────┬───────────────────╮
+# => │ # │   country   │       rows        │
+# => ├───┼─────────────┼───────────────────┤
+# => │ 0 │ Afghanistan │ [table 75 rows]   │
+# => │ 1 │ Albania     │ [table 74 rows]   │
+# => │ ...                                 │
+# => ╰───┴─────────────┴───────────────────╯
+
+# Now we can iterate with each
+open data/covid_19_data.csv
+| group-by `Country/Region`
+| transpose country rows
+| each {|group| $group.rows | get Deaths | math sum}
+```
+
+#qa[What does `$group.rows` contain?][The table of all COVID rows for that country in the original table.]
+
+== Exercises
+
+Exercise: Add an additional column with country name and sort by deaths. Solution:
+
+#pause
+
+```sh
+  open data/covid_19_data.csv
+  | group-by `Country/Region`
+  | transpose country rows
+  | each {|group|
+      {country: $group.country, total_deaths: ($group.rows | get Deaths | math sum)}
+    }
+  | sort-by total_deaths --reverse
+```
+
+
+#qa[What would be an even simpler way to achieve this without using `transpose`?][Using `items` directly on the grouped record.]
+
+
+
+```sh
+open data/covid_19_data.csv
+| group-by `Country/Region`
+| items {|country, rows|
+    {country: $country, total_deaths: ($rows | get Deaths | math sum)}
+  }
+| sort-by total_deaths --reverse
+```
