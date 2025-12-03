@@ -1,0 +1,20 @@
+# https://github.com/wvhulle/nu-lint
+[language-server.nu-lint]
+command = "nu-lint"
+args = [ "lsp"]
+
+[[language]]
+name = "nu"
+language-servers = ["nu-lint"]
+
+
+
+# https://myriad-dreamin.github.io/tinymist/frontend/helix.html
+[language-server.tinymist]
+command = "tinymist"
+# Open preview with `tinymist preview slides.typ`
+config = { preview.background.enabled = true, preview.background.args = ["--data-plane-host=127.0.0.1:23635", "--open"] }
+
+[[language]]
+name = "typst"
+language-servers = ["tinymist"]

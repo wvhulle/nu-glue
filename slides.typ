@@ -2,7 +2,7 @@
 #import themes.university: *
 #import "@preview/cetz:0.3.2"
 #import "@preview/fletcher:0.5.5" as fletcher: edge, node
-#import "@preview/numbly:0.1.0": numbly
+// #import "@preview/numbly:0.1.0": numbly
 #import "@preview/theorion:0.3.2": *
 #import cosmos.clouds: *
 #show: show-theorion
@@ -98,7 +98,6 @@ Improvements:
 
 == Try it out out yourself
 
-No installation: https://www.nushell.sh/demo/
 
 Install locally: https://www.nushell.sh/book/installation.html
 
@@ -117,6 +116,8 @@ Linux:
 - Nix: `nix-shell -p nushell`
 - Snap: `sudo snap install nushell --classic`
 
+
+No installation: https://www.nushell.sh/demo/
 
 == Exercises
 
@@ -520,6 +521,9 @@ def vip-greet [
 == Exercises
 
 Exercise: Create a command line program / script that takes a list of numbers as input and outputs their average.
+
+
+*Warning*: You need the shebang: `#!/usr/bin/env -S nu --stdin` to be able to pipe into it.
 
 = Explore
 
@@ -937,3 +941,179 @@ open data/covid_19_data.csv
   }
 | sort-by total_deaths --reverse
 ```
+
+= Personal project `nu-lint`
+
+#focus-slide[
+  #image("images/nu-lint.png")
+]
+
+
+== Nu-lint is a Nu linter
+
+#slide[
+
+  Ready for testing. Compatible with earlier NuShell tools.
+
+  #pause
+
+  Download at #link("https://www.github.com/wvhulle/nu-lint").
+
+  #pause
+
+  List all rules with `nu-lint list-rules`.
+
+  #set text(size: 0.6em)
+  #grid(columns: 4, gutter: 2em)[
+    #pause
+    *bashisms* (16) \
+    `prefer_builtin_awk` \
+    `prefer_builtin_cat` \
+    `prefer_builtin_cd` \
+    `prefer_builtin_cut` \
+    `prefer_builtin_date` \
+    `prefer_builtin_echo` \
+    `prefer_builtin_find` \
+    `prefer_builtin_grep` \
+    `prefer_builtin_head` \
+    `prefer_builtin_ls` \
+    `prefer_builtin_read` \
+    `prefer_builtin_sed` \
+    `prefer_builtin_sort` \
+    `prefer_builtin_tail` \
+    `prefer_builtin_uniq` \
+    `prefer_builtin_wc` \
+  ][
+    #pause
+    *external-tools* (9) \
+    `prefer_builtin_curl` \
+    `prefer_builtin_eza` \
+    `prefer_builtin_fd` \
+    `prefer_builtin_hostname` \
+    `prefer_nushell_over_jq` \
+    `prefer_builtin_printenv` \
+    `prefer_builtin_rg` \
+    `prefer_builtin_wget` \
+    `prefer_builtin_which` \
+
+    *error-handling* (8) \
+    `add_metadata_to_error` \
+    `check_complete_exit_code` \
+    `descriptive_error_messages` \
+    `escape_string_interpolation_operators` \
+    `prefer_complete_for_external_commands` \
+    `prefer_error_make_for_stderr` \
+    `prefer_try_for_error_handling` \
+    `print_exit_use_error_make` \
+  ][
+
+    #pause
+    *performance* (10) \
+    `prefer_compound_assignment` \
+    `prefer_direct_use` \
+    `prefer_lines_over_split` \
+    `prefer_parse_over_split` \
+    `prefer_pipeline_input` \
+    `prefer_range_iteration` \
+    `prefer_where_over_each_if` \
+    `prefer_where_over_for_if` \
+    `remove_redundant_in` \
+    `unnecessary_variable_before_return` \
+
+    *formatting* (7) \
+    `brace_spacing` \
+    `no_trailing_spaces` \
+    `omit_list_commas` \
+    `pipe_spacing` \
+    `prefer_multiline_functions` \
+    `prefer_multiline_lists` \
+    `prefer_multiline_records` \
+  ][
+    #pause
+    *documentation* (4) \
+    `exported_function_docs` \
+    `main_named_args_docs` \
+    `main_positional_args_docs` \
+    `descriptive_error_messages` \
+
+    *naming* (3) \
+    `kebab_case_commands` \
+    `screaming_snake_constants` \
+    `snake_case_variables` \
+
+    *type-safety* (4) \
+    `missing_type_annotation` \
+    `prefer_path_type` \
+    `typed_pipeline_io` \
+    `external_script_as_argument` \
+
+    *side-effects* (3) \
+    `mixed_io_types` \
+    `print_and_return_data` \
+    `pure_before_side_effects` \
+
+    *systemd* (1) \
+    `systemd_journal_prefix` \
+
+  ]
+]
+
+#set text(size: 0.8em)
+== Nu service with Nix
+Create a custom Nix module to *control brightness based on civil sunset and sunrise* times (`heliocron`):
+
+#pause
+
+```nix
+let
+  cfg = config.programs.solar-brightness;
+
+  brightnessScript = pkgs.writers.writeNuBin "solar-brightness" (
+    builtins.readFile ./solar-brightness-manager.nu
+  );
+
+in
+{
+  options.programs.solar-brightness = {
+    enable = lib.mkEnableOption "Solar-based brightness control";
+
+    interval-minutes = lib.mkOption {
+      type = lib.types.str;
+      default = "15min";
+      description = "Check brightness interval (systemd/nushell duration format: sec, min, hr, day)";
+      example = "30min";
+    };
+  };
+}
+```
+
+Find the code at #link("https://github.com/wvhulle/nix-user-modules"), my public Nix user modules. Feel free to use any of them!
+
+
+== Calling the Nu script
+
+Declare a systemd service that uses the options from your custom solar Nix module:
+
+```nix
+config = lib.mkIf cfg.enable {
+  systemd.user.services.solar-brightness = {
+    Unit = {
+      Description = "Solar-based brightness adjustment";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = ''${brightnessScript}/bin/solar-brightness adjust --min-brightness ${toString cfg.min-brightness} --max-brightness ${toString cfg.max-brightness} --latitude ${toString cfg.location.latitude} --longitude ${toString cfg.location.longitude} --twilight-type ${cfg.twilight-type} --solar-offset "${cfg.solar-offset}" --transition-max-step ${toString cfg.transition.max-step} --transition-step-delay "${cfg.transition.step-delay}"'';
+    };
+  };
+};
+```
+
+#pause
+
+- Import the external Nu file in the Nix store #pause (use an external `.nu` file for linter support!) #pause
+- Call the imported Nu script in the Nix store in `ExecStart` #pause
+- Pass along command-line arguments with string interpolation #pause (use NuShells built-in command line argument parsing!) #pause
+- Provide dependencies `heliocron` for the service and timer (omitted)
+
