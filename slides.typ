@@ -1064,6 +1064,12 @@ Create a custom Nix module to *control brightness based on civil sunset and sunr
 
 #pause
 
+#codly(
+  annotations: (
+    (start: 4, end: 6, content: [Import of Nu script]),
+    (start: 10, end: 20, content: [Nix module options]),
+  ),
+)
 ```nix
 let
   cfg = config.programs.solar-brightness;
@@ -1094,6 +1100,18 @@ Find the code at #link("https://github.com/wvhulle/nix-user-modules"), my public
 
 Declare a systemd service that uses the options from your custom solar Nix module:
 
+#codly(
+  annotations: (
+    (start: 2, end: 2, content: [SystemD service name]),
+    (
+      start: 5,
+      end: 6,
+      content: [When to run service],
+    ),
+    (start: 10, end: 10, content: [Call to script in Nix store]),
+    (start: 11, end: 15, content: [Named Nu arguments]),
+  ),
+)
 ```nix
 config = lib.mkIf cfg.enable {
   systemd.user.services.solar-brightness = {
@@ -1104,7 +1122,11 @@ config = lib.mkIf cfg.enable {
     };
     Service = {
       Type = "oneshot";
-      ExecStart = ''${brightnessScript}/bin/solar-brightness adjust --min-brightness ${toString cfg.min-brightness} --max-brightness ${toString cfg.max-brightness} --latitude ${toString cfg.location.latitude} --longitude ${toString cfg.location.longitude} --twilight-type ${cfg.twilight-type} --solar-offset "${cfg.solar-offset}" --transition-max-step ${toString cfg.transition.max-step} --transition-step-delay "${cfg.transition.step-delay}"'';
+      ExecStart = ''${brightnessScript}/bin/solar-brightness adjust
+        --min-brightness ${toString cfg.min-brightness}
+        --max-brightness ${toString cfg.max-brightness}
+        --latitude ${toString cfg.location.latitude}
+        --longitude ${toString cfg.location.longitude}'';
     };
   };
 };
